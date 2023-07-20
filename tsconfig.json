@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "target": "esnext",
+        "moduleResolution": "node",
+        "lib": ["ESNext"],
+        "allowJs": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true
+    },
+    "files": ["./index.ts"]
+}

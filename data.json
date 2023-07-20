@@ -1,0 +1,143 @@
+[
+	{
+		"mimeType": "audio/webm; codecs=\"opus\"",
+		"qualityLabel": null,
+		"bitrate": 137440,
+		"audioBitrate": 160,
+		"itag": 251,
+		"url": "https://rr2---sn-cnoa-qxas.googlevideo.com/videoplayback?expire=1689898595&ei=A3q5ZIi6DI2b4t4P9sqVgAY&ip=61.0.50.145&id=o-ALA1yvpi5JJqNQ0S3NlkGXfR7-PbtbddRigkf6CXKWpw&itag=251&source=youtube&requiressl=yes&mh=lE&mm=31%2C26&mn=sn-cnoa-qxas%2Csn-cvh76nll&ms=au%2Conr&mv=m&mvi=2&pcm2cms=yes&pl=20&initcwndbps=736250&spc=Ul2Sq6j8XTQupB8FTGl1ySxYXgsCkVT8OjLYU8o23w&vprv=1&svpuc=1&mime=audio%2Fwebm&ns=UD4e30p-hqJPJpW9fhc2nQUO&gir=yes&clen=5916879&dur=384.761&lmt=1600764062748248&mt=1689876570&fvip=1&keepalive=yes&fexp=24007246%2C51000014&c=WEB&txp=6311222&n=iFVMDcGipp2YNQ&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Cns%2Cgir%2Cclen%2Cdur%2Clmt&sig=AOq0QJ8wRAIgME4rnOwoHm-FobfZnAkoi49O8IT81HklcVRo4P2P6zsCIDB3mmmgPy3jkRydhJy7YkrLFYGXbtyMxu5lLv2_HIn9&lsparams=mh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpcm2cms%2Cpl%2Cinitcwndbps&lsig=AG3C_xAwRgIhAIug9XGz6df3rBVxvQn_nMQUlx9ckMeep9z5fFwHVab9AiEA-nyuJ-LBjiH-wblniYTdhzTTHEGbQEoVvx3dsqxPr3s%3D",
+		"initRange": {
+			"start": "0",
+			"end": "265"
+		},
+		"indexRange": {
+			"start": "266",
+			"end": "925"
+		},
+		"lastModified": "1600764062748248",
+		"contentLength": "5916879",
+		"quality": "tiny",
+		"projectionType": "RECTANGULAR",
+		"averageBitrate": 123024,
+		"audioQuality": "AUDIO_QUALITY_MEDIUM",
+		"approxDurationMs": "384761",
+		"audioSampleRate": "48000",
+		"audioChannels": 2,
+		"loudnessDb": 0.64000034,
+		"hasVideo": false,
+		"hasAudio": true,
+		"container": "webm",
+		"codecs": "opus",
+		"videoCodec": null,
+		"audioCodec": "opus",
+		"isLive": false,
+		"isHLS": false,
+		"isDashMPD": false
+	},
+	{
+		"mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+		"qualityLabel": null,
+		"bitrate": 130827,
+		"audioBitrate": 128,
+		"itag": 140,
+		"url": "https://rr2---sn-cnoa-qxas.googlevideo.com/videoplayback?expire=1689898595&ei=A3q5ZIi6DI2b4t4P9sqVgAY&ip=61.0.50.145&id=o-ALA1yvpi5JJqNQ0S3NlkGXfR7-PbtbddRigkf6CXKWpw&itag=140&source=youtube&requiressl=yes&mh=lE&mm=31%2C26&mn=sn-cnoa-qxas%2Csn-cvh76nll&ms=au%2Conr&mv=m&mvi=2&pcm2cms=yes&pl=20&initcwndbps=736250&spc=Ul2Sq6j8XTQupB8FTGl1ySxYXgsCkVT8OjLYU8o23w&vprv=1&svpuc=1&mime=audio%2Fmp4&ns=UD4e30p-hqJPJpW9fhc2nQUO&gir=yes&clen=6228505&dur=384.801&lmt=1600764074466733&mt=1689876570&fvip=1&keepalive=yes&fexp=24007246%2C51000014&c=WEB&txp=6311222&n=iFVMDcGipp2YNQ&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Cns%2Cgir%2Cclen%2Cdur%2Clmt&sig=AOq0QJ8wRQIhAIKAtH-3SihdWie0wrr8w238Um-IK9avKqMHK6PDvUtQAiASDk04lMhOs_y-AEP1BZxUuHczkaSocVryWl9ACl6Rlw%3D%3D&lsparams=mh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpcm2cms%2Cpl%2Cinitcwndbps&lsig=AG3C_xAwRgIhAIug9XGz6df3rBVxvQn_nMQUlx9ckMeep9z5fFwHVab9AiEA-nyuJ-LBjiH-wblniYTdhzTTHEGbQEoVvx3dsqxPr3s%3D",
+		"initRange": {
+			"start": "0",
+			"end": "631"
+		},
+		"indexRange": {
+			"start": "632",
+			"end": "1131"
+		},
+		"lastModified": "1600764074466733",
+		"contentLength": "6228505",
+		"quality": "tiny",
+		"projectionType": "RECTANGULAR",
+		"averageBitrate": 129490,
+		"highReplication": true,
+		"audioQuality": "AUDIO_QUALITY_MEDIUM",
+		"approxDurationMs": "384801",
+		"audioSampleRate": "44100",
+		"audioChannels": 2,
+		"loudnessDb": 0.64000034,
+		"hasVideo": false,
+		"hasAudio": true,
+		"container": "mp4",
+		"codecs": "mp4a.40.2",
+		"videoCodec": null,
+		"audioCodec": "mp4a.40.2",
+		"isLive": false,
+		"isHLS": false,
+		"isDashMPD": false
+	},
+	{
+		"mimeType": "audio/webm; codecs=\"opus\"",
+		"qualityLabel": null,
+		"bitrate": 72605,
+		"audioBitrate": 64,
+		"itag": 250,
+		"url": "https://rr2---sn-cnoa-qxas.googlevideo.com/videoplayback?expire=1689898595&ei=A3q5ZIi6DI2b4t4P9sqVgAY&ip=61.0.50.145&id=o-ALA1yvpi5JJqNQ0S3NlkGXfR7-PbtbddRigkf6CXKWpw&itag=250&source=youtube&requiressl=yes&mh=lE&mm=31%2C26&mn=sn-cnoa-qxas%2Csn-cvh76nll&ms=au%2Conr&mv=m&mvi=2&pcm2cms=yes&pl=20&initcwndbps=736250&spc=Ul2Sq6j8XTQupB8FTGl1ySxYXgsCkVT8OjLYU8o23w&vprv=1&svpuc=1&mime=audio%2Fwebm&ns=UD4e30p-hqJPJpW9fhc2nQUO&gir=yes&clen=3297267&dur=384.761&lmt=1600764058946236&mt=1689876570&fvip=1&keepalive=yes&fexp=24007246%2C51000014&c=WEB&txp=6311222&n=iFVMDcGipp2YNQ&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Cns%2Cgir%2Cclen%2Cdur%2Clmt&sig=AOq0QJ8wRgIhALgcmox_ReLZa__cCtOK6biUe_C3rsH3apHPSrzafZU1AiEAmT0XyZGX3oDwl5WOou28AShTiCgIXLHUZpoQqG0cQpA%3D&lsparams=mh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpcm2cms%2Cpl%2Cinitcwndbps&lsig=AG3C_xAwRgIhAIug9XGz6df3rBVxvQn_nMQUlx9ckMeep9z5fFwHVab9AiEA-nyuJ-LBjiH-wblniYTdhzTTHEGbQEoVvx3dsqxPr3s%3D",
+		"initRange": {
+			"start": "0",
+			"end": "265"
+		},
+		"indexRange": {
+			"start": "266",
+			"end": "925"
+		},
+		"lastModified": "1600764058946236",
+		"contentLength": "3297267",
+		"quality": "tiny",
+		"projectionType": "RECTANGULAR",
+		"averageBitrate": 68557,
+		"audioQuality": "AUDIO_QUALITY_LOW",
+		"approxDurationMs": "384761",
+		"audioSampleRate": "48000",
+		"audioChannels": 2,
+		"loudnessDb": 0.64000034,
+		"hasVideo": false,
+		"hasAudio": true,
+		"container": "webm",
+		"codecs": "opus",
+		"videoCodec": null,
+		"audioCodec": "opus",
+		"isLive": false,
+		"isHLS": false,
+		"isDashMPD": false
+	},
+	{
+		"mimeType": "audio/webm; codecs=\"opus\"",
+		"qualityLabel": null,
+		"bitrate": 55740,
+		"audioBitrate": 48,
+		"itag": 249,
+		"url": "https://rr2---sn-cnoa-qxas.googlevideo.com/videoplayback?expire=1689898595&ei=A3q5ZIi6DI2b4t4P9sqVgAY&ip=61.0.50.145&id=o-ALA1yvpi5JJqNQ0S3NlkGXfR7-PbtbddRigkf6CXKWpw&itag=249&source=youtube&requiressl=yes&mh=lE&mm=31%2C26&mn=sn-cnoa-qxas%2Csn-cvh76nll&ms=au%2Conr&mv=m&mvi=2&pcm2cms=yes&pl=20&initcwndbps=736250&spc=Ul2Sq6j8XTQupB8FTGl1ySxYXgsCkVT8OjLYU8o23w&vprv=1&svpuc=1&mime=audio%2Fwebm&ns=UD4e30p-hqJPJpW9fhc2nQUO&gir=yes&clen=2512854&dur=384.761&lmt=1600764063954462&mt=1689876570&fvip=1&keepalive=yes&fexp=24007246%2C51000014&c=WEB&txp=6311222&n=iFVMDcGipp2YNQ&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Cns%2Cgir%2Cclen%2Cdur%2Clmt&sig=AOq0QJ8wRQIgYA77puYtS7CEFxyCI9zTj1RX1Rp62HtOGviWiA1GyEACIQDFjItO2KJqvTgJuYLs0YeUYmTv_UThD8ferfVKsliKJQ%3D%3D&lsparams=mh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpcm2cms%2Cpl%2Cinitcwndbps&lsig=AG3C_xAwRgIhAIug9XGz6df3rBVxvQn_nMQUlx9ckMeep9z5fFwHVab9AiEA-nyuJ-LBjiH-wblniYTdhzTTHEGbQEoVvx3dsqxPr3s%3D",
+		"initRange": {
+			"start": "0",
+			"end": "265"
+		},
+		"indexRange": {
+			"start": "266",
+			"end": "925"
+		},
+		"lastModified": "1600764063954462",
+		"contentLength": "2512854",
+		"quality": "tiny",
+		"projectionType": "RECTANGULAR",
+		"averageBitrate": 52247,
+		"audioQuality": "AUDIO_QUALITY_LOW",
+		"approxDurationMs": "384761",
+		"audioSampleRate": "48000",
+		"audioChannels": 2,
+		"loudnessDb": 0.64000034,
+		"hasVideo": false,
+		"hasAudio": true,
+		"container": "webm",
+		"codecs": "opus",
+		"videoCodec": null,
+		"audioCodec": "opus",
+		"isLive": false,
+		"isHLS": false,
+		"isDashMPD": false
+	}
+]
