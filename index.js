@@ -46,6 +46,8 @@ program
     .addOption(new Option("-v, --video", "Download mp4"))
     .addOption(new Option("-b, --bitrate <size>", "Bitrate of audio in kbps.").argParser(parseInt))
     .addOption(new Option("-q, --quality <option>", `Video quality`).choices(qualityOrder))
+    .addOption(new Option("--suffixBitrate <boolean>", "Suffix bitrate after mp3 title. ex. title_160kbps.mp3"))
+    .addOption(new Option("--makeAlbumArt <boolean>", "Embed video thumbnail as album art on .mp3."))
     .addOption(new Option("-c, --cookies <string>", `Set cookies for a bit faster download or to access private videos. Need to change regularly. Go to ${chalk.greenBright("https://www.youtube.com/")}, ctrl+shift+i, type ${chalk.greenBright("document.cookies")}, copy and paste whole result.`));
 const defaultSettings = {
     /**
@@ -535,6 +537,14 @@ program.parse(process.argv);
 if (program.opts().cookies) {
     fs.writeFileSync("./.env", `COOKIES="${program.opts().cookies}"`);
     console.log(chalk.greenBright("Cookies added."));
+    process.exit(0);
+}
+if ("suffixBitrate" in program.opts() || "makeAlbumArt" in program.opts()) {
+    if ("suffixBitrate" in program.opts())
+        settings.suffixBitrate = JSON.parse(program.opts().suffixBitrate);
+    if ("makeAlbumArt" in program.opts())
+        settings.makeAlbumArt = JSON.parse(program.opts().makeAlbumArt);
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, "\t"));
     process.exit(0);
 }
 await dl.start(program.opts());
