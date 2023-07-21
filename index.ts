@@ -119,10 +119,9 @@ class YTDownload {
     setBitrate(bitrate: number) {
         if (bitrate >= 32 && bitrate <= 320) this.#bitrate = bitrate;
     }
-    formatTime(time: number[]): number {
-        console.log(time, time[0] * 60 * 60 + time[1] * 60 + time[2]);
-        return time[0] * 60 * 60 + time[1] * 60 + time[2];
-    }
+    // formatTime(time: number[]): number {
+    //     return time[0] * 60 * 60 + time[1] * 60 + time[2];
+    // }
     queueNext(url: string | string[], format: T_FORMATS) {
         if (!url || !format) return;
         if (typeof url === "string") this.#downloadQueue.push({ url, format });
