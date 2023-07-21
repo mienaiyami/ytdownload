@@ -173,7 +173,10 @@ class YTDownload {
         //     quality:"highestaudio"
         // })
         console.log(chalk.greenBright("Title:"), title);
-        // const start = new Date();
+        console.log(
+            chalk.greenBright("Started:"),
+            new Date().toLocaleTimeString()
+        );
         const spinner = createSpinner("Starting Download...").start();
         const filename = `./downloads/mp3/${title}${
             settings.suffixBitrate ? `_${this.#bitrate}kbps` : ""
@@ -217,12 +220,16 @@ class YTDownload {
             .save(filename)
             .on("error", (err) => {
                 spinner.error({ text: err.message });
-                console.log(err);
+                // console.log(err);
                 if (fs.existsSync(thumbPath)) fs.rmSync(thumbPath);
                 this.startDownload();
             })
             .on("end", () => {
-                spinner.success({ text: "Downloaded." });
+                spinner.success();
+                console.log(
+                    chalk.greenBright("Downloaded:"),
+                    new Date().toLocaleTimeString()
+                );
                 if (fs.existsSync(thumbPath)) fs.rmSync(thumbPath);
                 this.startDownload();
             });
