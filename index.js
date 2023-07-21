@@ -17,6 +17,16 @@ import { Command, Option } from "commander";
 const pkgJSON = JSON.parse(fs.readFileSync("./package.json", "utf8"));
 const program = new Command();
 const settingsPath = path.resolve("./settings.json");
+const qualityOrder = [
+    "144p",
+    "240p",
+    "360p",
+    "480p",
+    "720p",
+    "720p60",
+    "1080p",
+    "1080p60",
+];
 program
     .name("yt-downloader")
     .description(`CLI to download mp3/mp4 from youtube.
@@ -31,7 +41,8 @@ program
     .addOption(new Option("-m, --links <items>", "Multiple comma separated links.").argParser((value) => value.split(",").filter((e) => ytdl.validateURL(e))))
     .addOption(new Option("-a, --audio", "Download mp3"))
     .addOption(new Option("-v, --video", "Download mp4"))
-    .addOption(new Option("-b, --bitrate <size>", "Bitrate of audio in kbps.").argParser(parseInt));
+    .addOption(new Option("-b, --bitrate <size>", "Bitrate of audio in kbps.").argParser(parseInt))
+    .addOption(new Option("-q, --quality <option>", `Video quality`).choices(qualityOrder));
 const defaultSettings = {
     /**
      * suffix bitrate on file name, ex. `abc._320kbps.mp3`
@@ -82,12 +93,17 @@ const FORMATS = ["audio/mp3", "video/mp4"];
 class YTDownload {
     #downloadQueue = [];
     #bitrate = 256;
+    #downloadQuality = "720p";
     byteToMB(size) {
         return (size / 1024 / 1024).toFixed(2);
     }
     setBitrate(bitrate) {
         if (bitrate >= 32 && bitrate <= 320)
             this.#bitrate = bitrate;
+    }
+    setQuality(quality) {
+        if (qualityOrder.includes(quality))
+            this.#downloadQuality = quality;
     }
     // formatTime(time: number[]): number {
     //     return time[0] * 60 * 60 + time[1] * 60 + time[2];
@@ -102,9 +118,11 @@ class YTDownload {
     }
     async start(options) {
         if (Object.keys(options).length > 0) {
+            if (options.quality)
+                this.setQuality(options.quality);
+            if (options.bitrate)
+                this.setBitrate(options.bitrate);
             if (options.link && ytdl.validateURL(options.link)) {
-                if (options.bitrate)
-                    this.setBitrate(options.bitrate);
                 if (options.audio) {
                     this.queueNext(options.link, "audio/mp3");
                     this.startDownload();
@@ -161,11 +179,22 @@ class YTDownload {
             message: chalk.greenBright("Choose audio bitrate:"),
             prefix: chalk.cyanBright("#"),
             choices: ["320kbps", "256kbps", "192kbps", "128kbps", "96kbps"],
-            default: "256kbps",
+            default: "128kbps",
             filter(input) {
                 return parseInt(input);
             },
         });
+        if (format === FORMATS[1]) {
+            const { quality } = await inquirer.prompt({
+                name: "quality",
+                type: "list",
+                message: chalk.greenBright("Choose video quality:"),
+                prefix: chalk.cyanBright("#"),
+                choices: qualityOrder,
+                default: "720p",
+            });
+            this.setQuality(quality);
+        }
         // let rangeStart = [0, 0, 0];
         // let rangeEnd = [0, 0, 0];
         // if (urls.length === 1) {
@@ -314,20 +343,10 @@ class YTDownload {
             !format.hasAudio);
         if (videos.length === 0)
             return console.error("No video found.");
-        const qualityOrder = [
-            "144p",
-            "240p",
-            "360p",
-            "480p",
-            "720p",
-            "720p60",
-            "1080p",
-            "1080p60",
-        ];
         let quality = 4;
         let bestVideo;
         while (true) {
-            bestVideo = videos.find((e) => e.qualityLabel === qualityOrder[quality]);
+            bestVideo = videos.find((e) => e.qualityLabel === this.#downloadQuality);
             if (bestVideo)
                 break;
             quality--;
@@ -456,7 +475,6 @@ class YTDownload {
             downloadSuccess();
         });
         const ffmpegCommand_Video = ffmpeg(videoStream)
-            .audioBitrate(this.#bitrate)
             .save(tempVideo)
             .on("error", (err) => {
             spinner.error({ text: err.message });
