@@ -536,7 +536,7 @@ class YTDownload {
             videoTotal: 0,
             audioTotal: 0,
             // so downloadSuccess dont get called twice
-            finished: false,
+            finished: 0,
         };
         const update = () => {
             spinner.update({
@@ -552,43 +552,44 @@ class YTDownload {
 
         const downloadSuccess = () => {
             if (
-                !progress.finished &&
                 progress.audio === progress.audioTotal &&
                 progress.video === progress.videoTotal
             ) {
-                progress.finished = true;
+                progress.finished++;
+                console.log(progress.finished);
+                if (progress.finished !== 2) return;
                 spinner.success();
                 console.log(
                     chalk.greenBright("Downloaded:"),
                     new Date().toLocaleTimeString()
                 );
-                setTimeout(() => {
-                    const buildSpinner = createSpinner().start({
-                        text: "Building...",
-                    });
-                    ffmpeg()
-                        .input(tempVideo)
-                        .input(tempAudio)
-                        .addOption(["-c:v", "copy"])
-                        .addOption(["-c:a", "aac"])
-                        // .addOption(["-map", "0:v:0"])
-                        // .addOption(["-map", "1:a:0"])
-                        .output(filename)
-                        .on("error", (err) => {
-                            buildSpinner.error({ text: err.message });
-                            // console.log(err);
-                            this.startDownload();
-                        })
-                        .on("end", () => {
-                            buildSpinner.success();
-                            console.log(
-                                chalk.greenBright("Built:"),
-                                new Date().toLocaleTimeString()
-                            );
-                            this.startDownload();
-                        })
-                        .run();
-                }, 500);
+                // setTimeout(() => {
+                const buildSpinner = createSpinner().start({
+                    text: "Building...",
+                });
+                ffmpeg()
+                    .input(tempVideo)
+                    .input(tempAudio)
+                    .addOption(["-c:v", "copy"])
+                    .addOption(["-c:a", "aac"])
+                    // .addOption(["-map", "0:v:0"])
+                    // .addOption(["-map", "1:a:0"])
+                    .output(filename)
+                    .on("error", (err) => {
+                        buildSpinner.error({ text: err.message });
+                        // console.log(err);
+                        this.startDownload();
+                    })
+                    .on("end", () => {
+                        buildSpinner.success();
+                        console.log(
+                            chalk.greenBright("Built:"),
+                            new Date().toLocaleTimeString()
+                        );
+                        this.startDownload();
+                    })
+                    .run();
+                // }, 500);
             }
         };
 
