@@ -111,10 +111,6 @@ class YTDownload {
     #downloadQueue = [] as {
         url: string;
         format: T_FORMATS;
-        range: {
-            start: number;
-            end: number;
-        };
     }[];
     #bitrate = 256;
     byteToMB(size: number): string {
@@ -127,34 +123,10 @@ class YTDownload {
         console.log(time, time[0] * 60 * 60 + time[1] * 60 + time[2]);
         return time[0] * 60 * 60 + time[1] * 60 + time[2];
     }
-    queueNext(
-        url: string | string[],
-        format: T_FORMATS,
-        range_A: {
-            start: number | number[];
-            end: number | number[];
-        } = {
-            end: [0, 0, 0],
-            start: [0, 0, 0],
-        }
-    ) {
+    queueNext(url: string | string[], format: T_FORMATS) {
         if (!url || !format) return;
-        const range = {
-            start:
-                range_A.start instanceof Array
-                    ? this.formatTime(range_A.start)
-                    : range_A.start,
-            end:
-                range_A.end instanceof Array
-                    ? this.formatTime(range_A.end)
-                    : range_A.end,
-        };
-        if (typeof url === "string")
-            this.#downloadQueue.push({ url, format, range });
-        else
-            this.#downloadQueue.push(
-                ...url.map((e) => ({ url: e, format, range }))
-            );
+        if (typeof url === "string") this.#downloadQueue.push({ url, format });
+        else this.#downloadQueue.push(...url.map((e) => ({ url: e, format })));
     }
     async start(options: any) {
         if (Object.keys(options).length > 0) {
@@ -188,8 +160,6 @@ class YTDownload {
             type: "input",
             prefix: chalk.cyanBright("#"),
             message: chalk.greenBright("Enter url or space separated urls:"),
-            // default: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
-            default: "https://www.youtube.com/watch?v=2x0WL5GDrfs",
             validate: (input: string) => {
                 if (!input) return false;
                 const urls = input.split(" ").filter((e) => e);
@@ -208,7 +178,7 @@ class YTDownload {
             message: chalk.greenBright("Choose a format:"),
             prefix: chalk.cyanBright("#"),
             choices: FORMATS,
-            default: 1,
+            default: 0,
         });
         const { bitrate } = await inquirer.prompt({
             name: "bitrate",
@@ -221,62 +191,59 @@ class YTDownload {
                 return parseInt(input);
             },
         });
-        let rangeStart = [0, 0, 0];
-        let rangeEnd = [0, 0, 0];
-        if (urls.length === 1) {
-            const getRange = async (name: string) =>
-                (
-                    await inquirer.prompt({
-                        name: name,
-                        type: "input",
-                        message: chalk.greenBright(
-                            "Choose starting time or click Enter:"
-                        ),
-                        prefix: chalk.cyanBright("#"),
-                        default: "00:00:00",
-                        validate(input: any) {
-                            if (input instanceof Array) {
-                                return true;
-                            }
-                            return "Invalid Input";
-                        },
-                        transformer(input: any, ans, flag) {
-                            if (flag.isFinal && input && input instanceof Array)
-                                return input.join(":");
-                            return input || "";
-                        },
-                        filter(input: string) {
-                            try {
-                                const abc = input
-                                    .split(":")
-                                    .map((e) => parseInt(e))
-                                    .filter((e) => !isNaN(e));
-                                if (abc.length === 3) {
-                                    if (
-                                        !(
-                                            abc[0] < 0 ||
-                                            abc[1] < 0 ||
-                                            abc[1] > 60 ||
-                                            abc[2] < 0 ||
-                                            abc[2] > 60
-                                        )
-                                    )
-                                        return abc;
-                                }
-                                return input;
-                            } catch {
-                                return input;
-                            }
-                        },
-                    })
-                )[name];
-            rangeStart = await getRange("rangeStart");
-            rangeEnd = await getRange("rangeEnd");
-        }
-        this.queueNext(urls, format, {
-            end: rangeEnd,
-            start: rangeStart,
-        });
+        // let rangeStart = [0, 0, 0];
+        // let rangeEnd = [0, 0, 0];
+        // if (urls.length === 1) {
+        //     const getRange = async (name: string) =>
+        //         (
+        //             await inquirer.prompt({
+        //                 name: name,
+        //                 type: "input",
+        //                 message: chalk.greenBright(
+        //                     "Choose starting time or click Enter:"
+        //                 ),
+        //                 prefix: chalk.cyanBright("#"),
+        //                 default: "00:00:00",
+        //                 validate(input: any) {
+        //                     if (input instanceof Array) {
+        //                         return true;
+        //                     }
+        //                     return "Invalid Input";
+        //                 },
+        //                 transformer(input: any, ans, flag) {
+        //                     if (flag.isFinal && input && input instanceof Array)
+        //                         return input.join(":");
+        //                     return input || "";
+        //                 },
+        //                 filter(input: string) {
+        //                     try {
+        //                         const abc = input
+        //                             .split(":")
+        //                             .map((e) => parseInt(e))
+        //                             .filter((e) => !isNaN(e));
+        //                         if (abc.length === 3) {
+        //                             if (
+        //                                 !(
+        //                                     abc[0] < 0 ||
+        //                                     abc[1] < 0 ||
+        //                                     abc[1] > 60 ||
+        //                                     abc[2] < 0 ||
+        //                                     abc[2] > 60
+        //                                 )
+        //                             )
+        //                                 return abc;
+        //                         }
+        //                         return input;
+        //                     } catch {
+        //                         return input;
+        //                     }
+        //                 },
+        //             })
+        //         )[name];
+        //     rangeStart = await getRange("rangeStart");
+        //     rangeEnd = await getRange("rangeEnd");
+        // }
+        this.queueNext(urls, format);
         this.setBitrate(bitrate);
         if (format === FORMATS[0]) {
             this.startDownload();
@@ -300,9 +267,9 @@ class YTDownload {
             const current = this.#downloadQueue.shift();
             console.log(chalk.greenBright("Link :"), current?.url);
             if (current?.format === "audio/mp3")
-                this.#getAudio(current?.url as string, current?.range);
+                this.#getAudio(current?.url as string);
             if (current?.format === "video/mp4")
-                this.#getVideo(current?.url as string, current?.range);
+                this.#getVideo(current?.url as string);
         } else
             console.log(
                 chalk.greenBright(
@@ -314,7 +281,7 @@ class YTDownload {
     /**
      * if found bitrates are higher #bitrate, choose first higher from bottom.
      */
-    async #getAudio(url: string, range: ytdl.downloadOptions["range"]) {
+    async #getAudio(url: string) {
         const info = await ytdl.getInfo(url);
         const audios = ytdl.filterFormats(info.formats, "audioonly");
         if (audios.length === 0) return console.error("No audio found.");
@@ -327,9 +294,6 @@ class YTDownload {
         const title = sanitize(info.videoDetails.title);
         const stream = ytdl.downloadFromInfo(info, {
             format: best,
-            begin: range?.start,
-            range:range
-            },
         });
         console.log(chalk.greenBright("Title:"), title);
         console.log(
@@ -393,7 +357,7 @@ class YTDownload {
                 this.startDownload();
             });
     }
-    async #getVideo(url: string, range: ytdl.downloadOptions["range"]) {
+    async #getVideo(url: string) {
         const info = await ytdl.getInfo(url);
         const videos = ytdl.filterFormats(
             info.formats,
@@ -452,10 +416,6 @@ class YTDownload {
         }
         const videoStream = ytdl.downloadFromInfo(info, {
             format: bestVideo,
-            range: {
-                start: range?.start === 0 ? undefined : range?.start,
-                end: range?.end === 0 ? undefined : range?.end,
-            },
         });
 
         const audios = ytdl.filterFormats(info.formats, "audioonly");
@@ -466,18 +426,8 @@ class YTDownload {
                 .find(
                     (e) => e.audioBitrate && e.audioBitrate >= this.#bitrate
                 ) || audios[0];
-        console.log({
-            range: {
-                start: range?.start === 0 ? undefined : range?.start,
-                end: range?.end === 0 ? undefined : range?.end,
-            },
-        });
         const audioStream = ytdl.downloadFromInfo(info, {
             format: bestAudio,
-            range: {
-                start: range?.start === 0 ? undefined : range?.start,
-                end: range?.end === 0 ? undefined : range?.end,
-            },
         });
 
         const title = sanitize(info.videoDetails.title);
@@ -611,4 +561,4 @@ program.parse(process.argv);
 await dl.start(program.opts());
 
 // test https://www.youtube.com/watch?v=aqz-KE-bpKQ
-// vid test https://www.youtube.com/watch?v=2x0WL5GDrfs
+// https://www.youtube.com/watch?v=2x0WL5GDrfs

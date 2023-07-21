@@ -90,24 +90,13 @@ class YTDownload {
         console.log(time, time[0] * 60 * 60 + time[1] * 60 + time[2]);
         return time[0] * 60 * 60 + time[1] * 60 + time[2];
     }
-    queueNext(url, format, range_A = {
-        end: [0, 0, 0],
-        start: [0, 0, 0],
-    }) {
+    queueNext(url, format) {
         if (!url || !format)
             return;
-        const range = {
-            start: range_A.start instanceof Array
-                ? this.formatTime(range_A.start)
-                : range_A.start,
-            end: range_A.end instanceof Array
-                ? this.formatTime(range_A.end)
-                : range_A.end,
-        };
         if (typeof url === "string")
-            this.#downloadQueue.push({ url, format, range });
+            this.#downloadQueue.push({ url, format });
         else
-            this.#downloadQueue.push(...url.map((e) => ({ url: e, format, range })));
+            this.#downloadQueue.push(...url.map((e) => ({ url: e, format })));
     }
     async start(options) {
         if (Object.keys(options).length > 0) {
@@ -142,8 +131,6 @@ class YTDownload {
             type: "input",
             prefix: chalk.cyanBright("#"),
             message: chalk.greenBright("Enter url or space separated urls:"),
-            // default: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
-            default: "https://www.youtube.com/watch?v=2x0WL5GDrfs",
             validate: (input) => {
                 if (!input)
                     return false;
@@ -164,7 +151,7 @@ class YTDownload {
             message: chalk.greenBright("Choose a format:"),
             prefix: chalk.cyanBright("#"),
             choices: FORMATS,
-            default: 1,
+            default: 0,
         });
         const { bitrate } = await inquirer.prompt({
             name: "bitrate",
@@ -177,54 +164,59 @@ class YTDownload {
                 return parseInt(input);
             },
         });
-        let rangeStart = [0, 0, 0];
-        let rangeEnd = [0, 0, 0];
-        if (urls.length === 1) {
-            const getRange = async (name) => (await inquirer.prompt({
-                name: name,
-                type: "input",
-                message: chalk.greenBright("Choose starting time or click Enter:"),
-                prefix: chalk.cyanBright("#"),
-                default: "00:00:00",
-                validate(input) {
-                    if (input instanceof Array) {
-                        return true;
-                    }
-                    return "Invalid Input";
-                },
-                transformer(input, ans, flag) {
-                    if (flag.isFinal && input && input instanceof Array)
-                        return input.join(":");
-                    return input || "";
-                },
-                filter(input) {
-                    try {
-                        const abc = input
-                            .split(":")
-                            .map((e) => parseInt(e))
-                            .filter((e) => !isNaN(e));
-                        if (abc.length === 3) {
-                            if (!(abc[0] < 0 ||
-                                abc[1] < 0 ||
-                                abc[1] > 60 ||
-                                abc[2] < 0 ||
-                                abc[2] > 60))
-                                return abc;
-                        }
-                        return input;
-                    }
-                    catch {
-                        return input;
-                    }
-                },
-            }))[name];
-            rangeStart = await getRange("rangeStart");
-            rangeEnd = await getRange("rangeEnd");
-        }
-        this.queueNext(urls, format, {
-            end: rangeEnd,
-            start: rangeStart,
-        });
+        // let rangeStart = [0, 0, 0];
+        // let rangeEnd = [0, 0, 0];
+        // if (urls.length === 1) {
+        //     const getRange = async (name: string) =>
+        //         (
+        //             await inquirer.prompt({
+        //                 name: name,
+        //                 type: "input",
+        //                 message: chalk.greenBright(
+        //                     "Choose starting time or click Enter:"
+        //                 ),
+        //                 prefix: chalk.cyanBright("#"),
+        //                 default: "00:00:00",
+        //                 validate(input: any) {
+        //                     if (input instanceof Array) {
+        //                         return true;
+        //                     }
+        //                     return "Invalid Input";
+        //                 },
+        //                 transformer(input: any, ans, flag) {
+        //                     if (flag.isFinal && input && input instanceof Array)
+        //                         return input.join(":");
+        //                     return input || "";
+        //                 },
+        //                 filter(input: string) {
+        //                     try {
+        //                         const abc = input
+        //                             .split(":")
+        //                             .map((e) => parseInt(e))
+        //                             .filter((e) => !isNaN(e));
+        //                         if (abc.length === 3) {
+        //                             if (
+        //                                 !(
+        //                                     abc[0] < 0 ||
+        //                                     abc[1] < 0 ||
+        //                                     abc[1] > 60 ||
+        //                                     abc[2] < 0 ||
+        //                                     abc[2] > 60
+        //                                 )
+        //                             )
+        //                                 return abc;
+        //                         }
+        //                         return input;
+        //                     } catch {
+        //                         return input;
+        //                     }
+        //                 },
+        //             })
+        //         )[name];
+        //     rangeStart = await getRange("rangeStart");
+        //     rangeEnd = await getRange("rangeEnd");
+        // }
+        this.queueNext(urls, format);
         this.setBitrate(bitrate);
         if (format === FORMATS[0]) {
             this.startDownload();
@@ -242,9 +234,9 @@ class YTDownload {
             const current = this.#downloadQueue.shift();
             console.log(chalk.greenBright("Link :"), current?.url);
             if (current?.format === "audio/mp3")
-                this.#getAudio(current?.url, current?.range);
+                this.#getAudio(current?.url);
             if (current?.format === "video/mp4")
-                this.#getVideo(current?.url, current?.range);
+                this.#getVideo(current?.url);
         }
         else
             console.log(chalk.greenBright("All Downloads Completed. Available at", path.resolve("./downloads")));
@@ -252,7 +244,7 @@ class YTDownload {
     /**
      * if found bitrates are higher #bitrate, choose first higher from bottom.
      */
-    async #getAudio(url, range) {
+    async #getAudio(url) {
         const info = await ytdl.getInfo(url);
         const audios = ytdl.filterFormats(info.formats, "audioonly");
         if (audios.length === 0)
@@ -263,243 +255,221 @@ class YTDownload {
         const title = sanitize(info.videoDetails.title);
         const stream = ytdl.downloadFromInfo(info, {
             format: best,
-            begin: range?.start,
-            range: range
         });
-    }
-    ;
-    console;
-    log(chalk, greenBright) { }
-}
-("Title:"), title;
-;
-console.log(chalk.greenBright("Started:"), new Date().toLocaleTimeString());
-const spinner = createSpinner("Starting Download...").start();
-const filename = `./downloads/mp3/${title}${settings.suffixBitrate ? `_${this.#bitrate}kbps` : ""}.mp3`;
-stream.on("progress", (e, downloaded, total) => {
-    spinner.update({
-        text: `${this.byteToMB(downloaded)} / ${this.byteToMB(total)}MB`,
-    });
-});
-stream.on("error", (err) => {
-    spinner.error({ text: err.message });
-});
-let thumbPath = `./downloads/mp3/${title}`;
-if (settings.makeAlbumArt) {
-    const raw_thumb = await fetch(info.videoDetails.thumbnails.at(-1).url);
-    const arraybuffer_thumb = await raw_thumb.arrayBuffer();
-    const buffer_thumb = Buffer.from(arraybuffer_thumb);
-    const type = await fileTypeFromBuffer(buffer_thumb);
-    // if (type) thumbPath += type.ext;
-    fs.writeFileSync(thumbPath, buffer_thumb);
-}
-const ffmpegCommand = ffmpeg(stream)
-    .audioBitrate(this.#bitrate)
-    .outputOption("-id3v2_version", "3")
-    //replace(/'/g, "\\'")
-    .outputOption("-metadata", `title=${info.videoDetails.title}`)
-    .outputOption("-metadata", `artist=${info.videoDetails.author.name}`);
-if (settings.makeAlbumArt && fs.existsSync(thumbPath))
-    ffmpegCommand
-        .input(thumbPath)
-        .outputOption("-map", "0:0")
-        .outputOption("-map", "1:0");
-ffmpegCommand
-    .save(filename)
-    .on("error", (err) => {
-    spinner.error({ text: err.message });
-    // console.log(err);
-    if (fs.existsSync(thumbPath))
-        fs.rmSync(thumbPath);
-    this.startDownload();
-})
-    .on("end", () => {
-    spinner.success();
-    console.log(chalk.greenBright("Downloaded:"), new Date().toLocaleTimeString());
-    if (fs.existsSync(thumbPath))
-        fs.rmSync(thumbPath);
-    this.startDownload();
-});
-async;
-#getVideo(url, string, range, ytdl.downloadOptions["range"]);
-{
-    const info = await ytdl.getInfo(url);
-    const videos = ytdl.filterFormats(info.formats, (format) => format.qualityLabel &&
-        format.container === "mp4" &&
-        !format.hasAudio);
-    if (videos.length === 0)
-        return console.error("No video found.");
-    const qualityOrder = [
-        "144p",
-        "240p",
-        "360p",
-        "480p",
-        "720p",
-        "720p60",
-        "1080p",
-        "1080p60",
-    ];
-    let quality = 4;
-    let bestVideo;
-    while (true) {
-        bestVideo = videos.find((e) => e.qualityLabel === qualityOrder[quality]);
-        if (bestVideo)
-            break;
-        quality--;
-        if (quality < 0)
-            break;
-        console.warn(chalk.yellowBright(`${qualityOrder[quality + 1]} not found, trying ${qualityOrder[quality]}`));
-    }
-    // fs.writeFileSync(
-    //     "test.json",
-    //     JSON.stringify(
-    //         videos.map((e) => [
-    //             e.codecs,
-    //             e.qualityLabel,
-    //             e.container,
-    //             e.mimeType,
-    //             e.url,
-    //             e.hasAudio,
-    //         ]),
-    //         null,
-    //         "\t"
-    //     )
-    // );
-    if (bestVideo === undefined) {
-        console.error(chalk.redBright("Video not found."));
-        this.startDownload();
-        return;
-    }
-    const videoStream = ytdl.downloadFromInfo(info, {
-        format: bestVideo,
-        range: {
-            start: range?.start === 0 ? undefined : range?.start,
-            end: range?.end === 0 ? undefined : range?.end,
-        },
-    });
-    const audios = ytdl.filterFormats(info.formats, "audioonly");
-    if (audios.length === 0)
-        return console.error("No audio found.");
-    const bestAudio = [...audios]
-        .reverse()
-        .find((e) => e.audioBitrate && e.audioBitrate >= this.#bitrate) || audios[0];
-    console.log({
-        range: {
-            start: range?.start === 0 ? undefined : range?.start,
-            end: range?.end === 0 ? undefined : range?.end,
-        },
-    });
-    const audioStream = ytdl.downloadFromInfo(info, {
-        format: bestAudio,
-        range: {
-            start: range?.start === 0 ? undefined : range?.start,
-            end: range?.end === 0 ? undefined : range?.end,
-        },
-    });
-    const title = sanitize(info.videoDetails.title);
-    console.log(chalk.greenBright("Title:"), title);
-    console.log(chalk.greenBright("Started:"), new Date().toLocaleTimeString());
-    const spinner = createSpinner("Starting Download...").start();
-    const filename = `./downloads/mp4/${title}${""
-    // settings.suffixBitrate ? `_${this.#bitrate}kbps` : ""
-    }.mp4`;
-    const tempAudio = "./downloads/temp.mp3";
-    const tempVideo = "./downloads/temp.mp4";
-    const progress = {
-        video: 0,
-        audio: 0,
-        videoTotal: 0,
-        audioTotal: 0,
-        // so downloadSuccess dont get called twice
-        finished: false,
-    };
-    const update = () => {
-        spinner.update({
-            text: `Audio: ${this.byteToMB(progress.audio)} / ${this.byteToMB(progress.audioTotal)} MB\n` +
-                `  Video: ${this.byteToMB(progress.video)} / ${this.byteToMB(progress.videoTotal)} MB`,
+        console.log(chalk.greenBright("Title:"), title);
+        console.log(chalk.greenBright("Started:"), new Date().toLocaleTimeString());
+        const spinner = createSpinner("Starting Download...").start();
+        const filename = `./downloads/mp3/${title}${settings.suffixBitrate ? `_${this.#bitrate}kbps` : ""}.mp3`;
+        stream.on("progress", (e, downloaded, total) => {
+            spinner.update({
+                text: `${this.byteToMB(downloaded)} / ${this.byteToMB(total)}MB`,
+            });
         });
-    };
-    const downloadSuccess = () => {
-        if (!progress.finished &&
-            progress.audio === progress.audioTotal &&
-            progress.video === progress.videoTotal) {
-            progress.finished = true;
+        stream.on("error", (err) => {
+            spinner.error({ text: err.message });
+        });
+        let thumbPath = `./downloads/mp3/${title}`;
+        if (settings.makeAlbumArt) {
+            const raw_thumb = await fetch(info.videoDetails.thumbnails.at(-1).url);
+            const arraybuffer_thumb = await raw_thumb.arrayBuffer();
+            const buffer_thumb = Buffer.from(arraybuffer_thumb);
+            const type = await fileTypeFromBuffer(buffer_thumb);
+            // if (type) thumbPath += type.ext;
+            fs.writeFileSync(thumbPath, buffer_thumb);
+        }
+        const ffmpegCommand = ffmpeg(stream)
+            .audioBitrate(this.#bitrate)
+            .outputOption("-id3v2_version", "3")
+            //replace(/'/g, "\\'")
+            .outputOption("-metadata", `title=${info.videoDetails.title}`)
+            .outputOption("-metadata", `artist=${info.videoDetails.author.name}`);
+        if (settings.makeAlbumArt && fs.existsSync(thumbPath))
+            ffmpegCommand
+                .input(thumbPath)
+                .outputOption("-map", "0:0")
+                .outputOption("-map", "1:0");
+        ffmpegCommand
+            .save(filename)
+            .on("error", (err) => {
+            spinner.error({ text: err.message });
+            // console.log(err);
+            if (fs.existsSync(thumbPath))
+                fs.rmSync(thumbPath);
+            this.startDownload();
+        })
+            .on("end", () => {
             spinner.success();
             console.log(chalk.greenBright("Downloaded:"), new Date().toLocaleTimeString());
-            setTimeout(() => {
-                const buildSpinner = createSpinner().start({
-                    text: "Building...",
-                });
-                ffmpeg()
-                    .input(tempVideo)
-                    .input(tempAudio)
-                    .addOption(["-c:v", "copy"])
-                    .addOption(["-c:a", "aac"])
-                    // .addOption(["-map", "0:v:0"])
-                    // .addOption(["-map", "1:a:0"])
-                    .output(filename)
-                    .on("error", (err) => {
-                    buildSpinner.error({ text: err.message });
-                    // console.log(err);
-                    this.startDownload();
-                })
-                    .on("end", () => {
-                    buildSpinner.success();
-                    console.log(chalk.greenBright("Built:"), new Date().toLocaleTimeString());
-                    this.startDownload();
-                })
-                    .run();
-            }, 500);
+            if (fs.existsSync(thumbPath))
+                fs.rmSync(thumbPath);
+            this.startDownload();
+        });
+    }
+    async #getVideo(url) {
+        const info = await ytdl.getInfo(url);
+        const videos = ytdl.filterFormats(info.formats, (format) => format.qualityLabel &&
+            format.container === "mp4" &&
+            !format.hasAudio);
+        if (videos.length === 0)
+            return console.error("No video found.");
+        const qualityOrder = [
+            "144p",
+            "240p",
+            "360p",
+            "480p",
+            "720p",
+            "720p60",
+            "1080p",
+            "1080p60",
+        ];
+        let quality = 4;
+        let bestVideo;
+        while (true) {
+            bestVideo = videos.find((e) => e.qualityLabel === qualityOrder[quality]);
+            if (bestVideo)
+                break;
+            quality--;
+            if (quality < 0)
+                break;
+            console.warn(chalk.yellowBright(`${qualityOrder[quality + 1]} not found, trying ${qualityOrder[quality]}`));
         }
-    };
-    audioStream.on("progress", (e, downloaded, total) => {
-        progress.audio = downloaded;
-        progress.audioTotal = total;
-        update();
-        // spinner.update({
-        //     text: `${(downloaded)} / ${(
-        //         total
-        //     )}MB`,
-        // });
-    });
-    videoStream.on("progress", (e, downloaded, total) => {
-        progress.video = downloaded;
-        progress.videoTotal = total;
-        update();
-        // spinner.update({
-        //     text: `${(downloaded)} / ${(
-        //         total
-        //     )}MB`,
-        // });
-    });
-    const ffmpegCommand_Audio = ffmpeg(audioStream)
-        .audioBitrate(this.#bitrate)
-        .save(tempAudio)
-        .on("error", (err) => {
-        spinner.error({ text: err.message });
-        // console.log(err);
-        // this.startDownload();
-        process.exit(1);
-    })
-        .on("end", () => {
-        downloadSuccess();
-    });
-    const ffmpegCommand_Video = ffmpeg(videoStream)
-        .audioBitrate(this.#bitrate)
-        .save(tempVideo)
-        .on("error", (err) => {
-        spinner.error({ text: err.message });
-        // console.log(err);
-        // this.startDownload();
-        process.exit(1);
-    })
-        .on("end", () => {
-        downloadSuccess();
-    })
-        .noAudio();
+        // fs.writeFileSync(
+        //     "test.json",
+        //     JSON.stringify(
+        //         videos.map((e) => [
+        //             e.codecs,
+        //             e.qualityLabel,
+        //             e.container,
+        //             e.mimeType,
+        //             e.url,
+        //             e.hasAudio,
+        //         ]),
+        //         null,
+        //         "\t"
+        //     )
+        // );
+        if (bestVideo === undefined) {
+            console.error(chalk.redBright("Video not found."));
+            this.startDownload();
+            return;
+        }
+        const videoStream = ytdl.downloadFromInfo(info, {
+            format: bestVideo,
+        });
+        const audios = ytdl.filterFormats(info.formats, "audioonly");
+        if (audios.length === 0)
+            return console.error("No audio found.");
+        const bestAudio = [...audios]
+            .reverse()
+            .find((e) => e.audioBitrate && e.audioBitrate >= this.#bitrate) || audios[0];
+        const audioStream = ytdl.downloadFromInfo(info, {
+            format: bestAudio,
+        });
+        const title = sanitize(info.videoDetails.title);
+        console.log(chalk.greenBright("Title:"), title);
+        console.log(chalk.greenBright("Started:"), new Date().toLocaleTimeString());
+        const spinner = createSpinner("Starting Download...").start();
+        const filename = `./downloads/mp4/${title}${""
+        // settings.suffixBitrate ? `_${this.#bitrate}kbps` : ""
+        }.mp4`;
+        const tempAudio = "./downloads/temp.mp3";
+        const tempVideo = "./downloads/temp.mp4";
+        const progress = {
+            video: 0,
+            audio: 0,
+            videoTotal: 0,
+            audioTotal: 0,
+            // so downloadSuccess dont get called twice
+            finished: false,
+        };
+        const update = () => {
+            spinner.update({
+                text: `Audio: ${this.byteToMB(progress.audio)} / ${this.byteToMB(progress.audioTotal)} MB\n` +
+                    `  Video: ${this.byteToMB(progress.video)} / ${this.byteToMB(progress.videoTotal)} MB`,
+            });
+        };
+        const downloadSuccess = () => {
+            if (!progress.finished &&
+                progress.audio === progress.audioTotal &&
+                progress.video === progress.videoTotal) {
+                progress.finished = true;
+                spinner.success();
+                console.log(chalk.greenBright("Downloaded:"), new Date().toLocaleTimeString());
+                setTimeout(() => {
+                    const buildSpinner = createSpinner().start({
+                        text: "Building...",
+                    });
+                    ffmpeg()
+                        .input(tempVideo)
+                        .input(tempAudio)
+                        .addOption(["-c:v", "copy"])
+                        .addOption(["-c:a", "aac"])
+                        // .addOption(["-map", "0:v:0"])
+                        // .addOption(["-map", "1:a:0"])
+                        .output(filename)
+                        .on("error", (err) => {
+                        buildSpinner.error({ text: err.message });
+                        // console.log(err);
+                        this.startDownload();
+                    })
+                        .on("end", () => {
+                        buildSpinner.success();
+                        console.log(chalk.greenBright("Built:"), new Date().toLocaleTimeString());
+                        this.startDownload();
+                    })
+                        .run();
+                }, 500);
+            }
+        };
+        audioStream.on("progress", (e, downloaded, total) => {
+            progress.audio = downloaded;
+            progress.audioTotal = total;
+            update();
+            // spinner.update({
+            //     text: `${(downloaded)} / ${(
+            //         total
+            //     )}MB`,
+            // });
+        });
+        videoStream.on("progress", (e, downloaded, total) => {
+            progress.video = downloaded;
+            progress.videoTotal = total;
+            update();
+            // spinner.update({
+            //     text: `${(downloaded)} / ${(
+            //         total
+            //     )}MB`,
+            // });
+        });
+        const ffmpegCommand_Audio = ffmpeg(audioStream)
+            .audioBitrate(this.#bitrate)
+            .save(tempAudio)
+            .on("error", (err) => {
+            spinner.error({ text: err.message });
+            // console.log(err);
+            // this.startDownload();
+            process.exit(1);
+        })
+            .on("end", () => {
+            downloadSuccess();
+        });
+        const ffmpegCommand_Video = ffmpeg(videoStream)
+            .audioBitrate(this.#bitrate)
+            .save(tempVideo)
+            .on("error", (err) => {
+            spinner.error({ text: err.message });
+            // console.log(err);
+            // this.startDownload();
+            process.exit(1);
+        })
+            .on("end", () => {
+            downloadSuccess();
+        })
+            .noAudio();
+    }
 }
 const dl = new YTDownload();
 program.parse(process.argv);
 await dl.start(program.opts());
 // test https://www.youtube.com/watch?v=aqz-KE-bpKQ
-// vid test https://www.youtube.com/watch?v=2x0WL5GDrfs
+// https://www.youtube.com/watch?v=2x0WL5GDrfs
