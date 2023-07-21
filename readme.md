@@ -25,7 +25,9 @@ installAndSetPath.cmd
 ```sh
 node .
 ```
+
 or add this directory to env path to run from anywhere using 
+
 ```sh
-ytdl
+ytdl --help
 ```
