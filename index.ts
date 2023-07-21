@@ -1,8 +1,9 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env node
 
 import fs from "fs";
 import path from "path";
 import { fileTypeFromBuffer } from "file-type";
+import { spawn } from "child_process";
 // import { Readable } from "stream";
 import fetch from "node-fetch";
 import chalk from "chalk";
@@ -11,8 +12,48 @@ import { createSpinner } from "nanospinner";
 import ytdl from "ytdl-core";
 import ffmpeg from "fluent-ffmpeg";
 import sanitize from "sanitize-filename";
+import { Command, Option } from "commander";
 
-const settingsPath = "./settings.json";
+const pkgJSON = JSON.parse(fs.readFileSync("./package.json", "utf8"));
+
+const program = new Command();
+
+const settingsPath = path.resolve("./settings.json");
+
+program
+    .name("yt-downloader")
+    .description(
+        `CLI to download mp3/mp4 from youtube.
+Run with or without args.
+By ${chalk.greenBright("https://github.com/mienaiyami")}`
+    )
+    .version(pkgJSON.version)
+    .addHelpText(
+        "afterAll",
+        `
+Access settings at ${chalk.greenBright(settingsPath)}.
+    `
+    );
+
+program
+    .addOption(new Option("-l, --link <string>", "Link of youtube video"))
+    .addOption(
+        new Option(
+            "-m, --links <items>",
+            "Multiple comma separated links."
+        ).argParser((value) =>
+            value.split(",").filter((e) => ytdl.validateURL(e))
+        )
+    )
+    .addOption(new Option("-a, --audio", "Download mp3"))
+    .addOption(new Option("-v, --video", "Download mp4"))
+    .addOption(
+        new Option(
+            "-b, --bitrate <size>",
+            "Bitrate of audio in kbps."
+        ).argParser(parseInt)
+    );
+
 const defaultSettings = {
     /**
      * suffix bitrate on file name, ex. `abc._320kbps.mp3`
@@ -64,27 +105,91 @@ validateSettings();
 if (!fs.existsSync("./downloads")) fs.mkdirSync("./downloads");
 if (!fs.existsSync("./downloads/mp3")) fs.mkdirSync("./downloads/mp3");
 if (!fs.existsSync("./downloads/mp4")) fs.mkdirSync("./downloads/mp4");
+const FORMATS = ["audio/mp3", "video/mp4"] as const;
+type T_FORMATS = (typeof FORMATS)[number];
 class YTDownload {
-    #downloadQueue = [] as string[];
+    #downloadQueue = [] as {
+        url: string;
+        format: T_FORMATS;
+        range: {
+            start: number;
+            end: number;
+        };
+    }[];
     #bitrate = 256;
-    byteToMB(size: number) {
+    byteToMB(size: number): string {
         return (size / 1024 / 1024).toFixed(2);
     }
     setBitrate(bitrate: number) {
         if (bitrate >= 32 && bitrate <= 320) this.#bitrate = bitrate;
     }
-    queueNext(url: string | string[]) {
-        if (!url) return;
-        if (typeof url === "string") this.#downloadQueue.push(url);
-        else this.#downloadQueue.push(...url);
+    formatTime(time: number[]): number {
+        console.log(time, time[0] * 60 * 60 + time[1] * 60 + time[2]);
+        return time[0] * 60 * 60 + time[1] * 60 + time[2];
     }
-    async start() {
+    queueNext(
+        url: string | string[],
+        format: T_FORMATS,
+        range_A: {
+            start: number | number[];
+            end: number | number[];
+        } = {
+            end: [0, 0, 0],
+            start: [0, 0, 0],
+        }
+    ) {
+        if (!url || !format) return;
+        const range = {
+            start:
+                range_A.start instanceof Array
+                    ? this.formatTime(range_A.start)
+                    : range_A.start,
+            end:
+                range_A.end instanceof Array
+                    ? this.formatTime(range_A.end)
+                    : range_A.end,
+        };
+        if (typeof url === "string")
+            this.#downloadQueue.push({ url, format, range });
+        else
+            this.#downloadQueue.push(
+                ...url.map((e) => ({ url: e, format, range }))
+            );
+    }
+    async start(options: any) {
+        if (Object.keys(options).length > 0) {
+            if (options.link && ytdl.validateURL(options.link)) {
+                if (options.bitrate) this.setBitrate(options.bitrate);
+                if (options.audio) {
+                    this.queueNext(options.link, "audio/mp3");
+                    this.startDownload();
+                }
+                if (options.video) {
+                    this.queueNext(options.link, "video/mp4");
+                    this.startDownload();
+                }
+            }
+            if (options.links) {
+                if (options.bitrate) this.setBitrate(options.bitrate);
+                if (options.audio) {
+                    this.queueNext(options.link, "audio/mp3");
+                    this.startDownload();
+                }
+                if (options.video) {
+                    this.queueNext(options.link, "video/mp4");
+                    this.startDownload();
+                }
+            }
+
+            return;
+        }
         const { urls_ans } = await inquirer.prompt({
             name: "urls_ans",
             type: "input",
             prefix: chalk.cyanBright("#"),
             message: chalk.greenBright("Enter url or space separated urls:"),
-            default: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+            // default: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+            default: "https://www.youtube.com/watch?v=2x0WL5GDrfs",
             validate: (input: string) => {
                 if (!input) return false;
                 const urls = input.split(" ").filter((e) => e);
@@ -97,11 +202,18 @@ class YTDownload {
         const urls = [
             ...new Set((urls_ans as string).split(" ").filter((e) => e)),
         ];
-        this.queueNext(urls);
+        const { format } = await inquirer.prompt({
+            name: "format",
+            type: "list",
+            message: chalk.greenBright("Choose a format:"),
+            prefix: chalk.cyanBright("#"),
+            choices: FORMATS,
+            default: 1,
+        });
         const { bitrate } = await inquirer.prompt({
             name: "bitrate",
             type: "list",
-            message: chalk.greenBright("Choose a bitrate:"),
+            message: chalk.greenBright("Choose audio bitrate:"),
             prefix: chalk.cyanBright("#"),
             choices: ["320kbps", "256kbps", "192kbps", "128kbps", "96kbps"],
             default: "256kbps",
@@ -109,69 +221,116 @@ class YTDownload {
                 return parseInt(input);
             },
         });
+        let rangeStart = [0, 0, 0];
+        let rangeEnd = [0, 0, 0];
+        if (urls.length === 1) {
+            const getRange = async (name: string) =>
+                (
+                    await inquirer.prompt({
+                        name: name,
+                        type: "input",
+                        message: chalk.greenBright(
+                            "Choose starting time or click Enter:"
+                        ),
+                        prefix: chalk.cyanBright("#"),
+                        default: "00:00:00",
+                        validate(input: any) {
+                            if (input instanceof Array) {
+                                return true;
+                            }
+                            return "Invalid Input";
+                        },
+                        transformer(input: any, ans, flag) {
+                            if (flag.isFinal && input && input instanceof Array)
+                                return input.join(":");
+                            return input || "";
+                        },
+                        filter(input: string) {
+                            try {
+                                const abc = input
+                                    .split(":")
+                                    .map((e) => parseInt(e))
+                                    .filter((e) => !isNaN(e));
+                                if (abc.length === 3) {
+                                    if (
+                                        !(
+                                            abc[0] < 0 ||
+                                            abc[1] < 0 ||
+                                            abc[1] > 60 ||
+                                            abc[2] < 0 ||
+                                            abc[2] > 60
+                                        )
+                                    )
+                                        return abc;
+                                }
+                                return input;
+                            } catch {
+                                return input;
+                            }
+                        },
+                    })
+                )[name];
+            rangeStart = await getRange("rangeStart");
+            rangeEnd = await getRange("rangeEnd");
+        }
+        this.queueNext(urls, format, {
+            end: rangeEnd,
+            start: rangeStart,
+        });
         this.setBitrate(bitrate);
-        this.startDownload();
+        if (format === FORMATS[0]) {
+            this.startDownload();
+        } else if (format === FORMATS[1]) {
+            if (urls.length > 1)
+                console.log(
+                    chalk.yellowBright(
+                        "More than one URL, some options will be hidden."
+                    )
+                );
+            this.startDownload();
+        }
     }
     startDownload() {
         console.log(new inquirer.Separator().line);
-        if (this.#downloadQueue.length > 0)
-            this.#getAudio(this.#downloadQueue.shift() as string);
-        else console.log(chalk.greenBright("All Downloads Completed."));
+        if (this.#downloadQueue.length > 0) {
+            console.log(
+                chalk.greenBright("Queue:"),
+                this.#downloadQueue.length
+            );
+            const current = this.#downloadQueue.shift();
+            console.log(chalk.greenBright("Link :"), current?.url);
+            if (current?.format === "audio/mp3")
+                this.#getAudio(current?.url as string, current?.range);
+            if (current?.format === "video/mp4")
+                this.#getVideo(current?.url as string, current?.range);
+        } else
+            console.log(
+                chalk.greenBright(
+                    "All Downloads Completed. Available at",
+                    path.resolve("./downloads")
+                )
+            );
     }
     /**
      * if found bitrates are higher #bitrate, choose first higher from bottom.
      */
-    async #getAudio(url: string) {
-        // if (!ytdl.validateURL(url)) return console.error("Invalid URL");
-        // const dl =await ytdl.getBasicInfo(url)
-        // console.log(dl.videoDetails.title);
-        // const vid = ytdl(url);
-        // vid.on("info",(info)=>{
-        //     console.log('Title:',info.videoDetails.title);
-        // })
+    async #getAudio(url: string, range: ytdl.downloadOptions["range"]) {
         const info = await ytdl.getInfo(url);
         const audios = ytdl.filterFormats(info.formats, "audioonly");
         if (audios.length === 0) return console.error("No audio found.");
-        // console.log(
-        //     audios.map((e) => ({
-        //         audioBitrate: e.audioBitrate,
-        //         quality: e.quality,
-        //         codecs: e.codecs,
-        //     }))
-        // );
         const best =
             [...audios]
                 .reverse()
                 .find(
                     (e) => e.audioBitrate && e.audioBitrate >= this.#bitrate
                 ) || audios[0];
-        // .map((e) => ({
-        //     audioBitrate: e.audioBitrate,
-        //     quality: e.quality,
-        //     codecs: e.codecs,
-        // }))
-
-        // console.log(
-        //     info.formats.map((e) => ({
-        //         audioBitrate: e.audioBitrate,
-        //         quality: e.quality,
-        //     }))
-        // );
         const title = sanitize(info.videoDetails.title);
-        const stream = ytdl.downloadFromInfo(info, { format: best });
-
-        // console.log(info.formats.map(e=>e.container));
-        // let audioFormats = ytdl.filterFormats(info.formats, "audioonly");
-        // console.log(
-        //     audioFormats.map((e) => {
-        //         e.;
-        //     })
-        // );
-        // fs.writeFileSync("./data.json", JSON.stringify(audioFormats, null, "\t"));
-
-        // const stream = ytdl(url,{
-        //     quality:"highestaudio"
-        // })
+        const stream = ytdl.downloadFromInfo(info, {
+            format: best,
+            begin: range?.start,
+            range:range
+            },
+        });
         console.log(chalk.greenBright("Title:"), title);
         console.log(
             chalk.greenBright("Started:"),
@@ -234,12 +393,222 @@ class YTDownload {
                 this.startDownload();
             });
     }
-}
-// const url = "https://www.youtube.com/watch?v=Yj-jxUpAxmE";
-const url = "https://youtu.be/vLZElIYHmAI";
-// const url = "https://www.youtube.com/watch?v=aqz-KE-bpKQ"
-const dl = new YTDownload();
-// dl.downloadAudio(url);
-await dl.start();
+    async #getVideo(url: string, range: ytdl.downloadOptions["range"]) {
+        const info = await ytdl.getInfo(url);
+        const videos = ytdl.filterFormats(
+            info.formats,
+            (format) =>
+                format.qualityLabel &&
+                format.container === "mp4" &&
+                !format.hasAudio
+        );
+        if (videos.length === 0) return console.error("No video found.");
+        const qualityOrder = [
+            "144p",
+            "240p",
+            "360p",
+            "480p",
+            "720p",
+            "720p60",
+            "1080p",
+            "1080p60",
+        ] as const;
+        let quality = 4;
+        let bestVideo: ytdl.videoFormat | undefined;
+        while (true) {
+            bestVideo = videos.find(
+                (e) => e.qualityLabel === qualityOrder[quality]
+            );
+            if (bestVideo) break;
+            quality--;
+            if (quality < 0) break;
+            console.warn(
+                chalk.yellowBright(
+                    `${qualityOrder[quality + 1]} not found, trying ${
+                        qualityOrder[quality]
+                    }`
+                )
+            );
+        }
+        // fs.writeFileSync(
+        //     "test.json",
+        //     JSON.stringify(
+        //         videos.map((e) => [
+        //             e.codecs,
+        //             e.qualityLabel,
+        //             e.container,
+        //             e.mimeType,
+        //             e.url,
+        //             e.hasAudio,
+        //         ]),
+        //         null,
+        //         "\t"
+        //     )
+        // );
+        if (bestVideo === undefined) {
+            console.error(chalk.redBright("Video not found."));
+            this.startDownload();
+            return;
+        }
+        const videoStream = ytdl.downloadFromInfo(info, {
+            format: bestVideo,
+            range: {
+                start: range?.start === 0 ? undefined : range?.start,
+                end: range?.end === 0 ? undefined : range?.end,
+            },
+        });
 
-// https://youtu.be/vLZElIYHmAI https://www.youtube.com/watch?v=aqz-KE-bpKQ
+        const audios = ytdl.filterFormats(info.formats, "audioonly");
+        if (audios.length === 0) return console.error("No audio found.");
+        const bestAudio =
+            [...audios]
+                .reverse()
+                .find(
+                    (e) => e.audioBitrate && e.audioBitrate >= this.#bitrate
+                ) || audios[0];
+        console.log({
+            range: {
+                start: range?.start === 0 ? undefined : range?.start,
+                end: range?.end === 0 ? undefined : range?.end,
+            },
+        });
+        const audioStream = ytdl.downloadFromInfo(info, {
+            format: bestAudio,
+            range: {
+                start: range?.start === 0 ? undefined : range?.start,
+                end: range?.end === 0 ? undefined : range?.end,
+            },
+        });
+
+        const title = sanitize(info.videoDetails.title);
+        console.log(chalk.greenBright("Title:"), title);
+        console.log(
+            chalk.greenBright("Started:"),
+            new Date().toLocaleTimeString()
+        );
+        const spinner = createSpinner("Starting Download...").start();
+        const filename = `./downloads/mp4/${title}${
+            ""
+            // settings.suffixBitrate ? `_${this.#bitrate}kbps` : ""
+        }.mp4`;
+
+        const tempAudio = "./downloads/temp.mp3";
+        const tempVideo = "./downloads/temp.mp4";
+
+        const progress = {
+            video: 0,
+            audio: 0,
+            videoTotal: 0,
+            audioTotal: 0,
+            // so downloadSuccess dont get called twice
+            finished: false,
+        };
+        const update = () => {
+            spinner.update({
+                text:
+                    `Audio: ${this.byteToMB(progress.audio)} / ${this.byteToMB(
+                        progress.audioTotal
+                    )} MB\n` +
+                    `  Video: ${this.byteToMB(
+                        progress.video
+                    )} / ${this.byteToMB(progress.videoTotal)} MB`,
+            });
+        };
+
+        const downloadSuccess = () => {
+            if (
+                !progress.finished &&
+                progress.audio === progress.audioTotal &&
+                progress.video === progress.videoTotal
+            ) {
+                progress.finished = true;
+                spinner.success();
+                console.log(
+                    chalk.greenBright("Downloaded:"),
+                    new Date().toLocaleTimeString()
+                );
+                setTimeout(() => {
+                    const buildSpinner = createSpinner().start({
+                        text: "Building...",
+                    });
+                    ffmpeg()
+                        .input(tempVideo)
+                        .input(tempAudio)
+                        .addOption(["-c:v", "copy"])
+                        .addOption(["-c:a", "aac"])
+                        // .addOption(["-map", "0:v:0"])
+                        // .addOption(["-map", "1:a:0"])
+                        .output(filename)
+                        .on("error", (err) => {
+                            buildSpinner.error({ text: err.message });
+                            // console.log(err);
+                            this.startDownload();
+                        })
+                        .on("end", () => {
+                            buildSpinner.success();
+                            console.log(
+                                chalk.greenBright("Built:"),
+                                new Date().toLocaleTimeString()
+                            );
+                            this.startDownload();
+                        })
+                        .run();
+                }, 500);
+            }
+        };
+
+        audioStream.on("progress", (e, downloaded, total) => {
+            progress.audio = downloaded;
+            progress.audioTotal = total;
+            update();
+            // spinner.update({
+            //     text: `${(downloaded)} / ${(
+            //         total
+            //     )}MB`,
+            // });
+        });
+        videoStream.on("progress", (e, downloaded, total) => {
+            progress.video = downloaded;
+            progress.videoTotal = total;
+            update();
+            // spinner.update({
+            //     text: `${(downloaded)} / ${(
+            //         total
+            //     )}MB`,
+            // });
+        });
+
+        const ffmpegCommand_Audio = ffmpeg(audioStream)
+            .audioBitrate(this.#bitrate)
+            .save(tempAudio)
+            .on("error", (err) => {
+                spinner.error({ text: err.message });
+                // console.log(err);
+                // this.startDownload();
+                process.exit(1);
+            })
+            .on("end", () => {
+                downloadSuccess();
+            });
+
+        const ffmpegCommand_Video = ffmpeg(videoStream)
+            .audioBitrate(this.#bitrate)
+            .save(tempVideo)
+            .on("error", (err) => {
+                spinner.error({ text: err.message });
+                // console.log(err);
+                // this.startDownload();
+                process.exit(1);
+            })
+            .on("end", () => {
+                downloadSuccess();
+            })
+            .noAudio();
+    }
+}
+const dl = new YTDownload();
+program.parse(process.argv);
+await dl.start(program.opts());
+
+// test https://www.youtube.com/watch?v=aqz-KE-bpKQ
+// vid test https://www.youtube.com/watch?v=2x0WL5GDrfs

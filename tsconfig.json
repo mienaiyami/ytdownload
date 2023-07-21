@@ -9,7 +9,8 @@
         "allowJs": true,
         "strict": true,
         "esModuleInterop": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "resolveJsonModule": true
     },
     "files": ["./index.ts"]
 }
