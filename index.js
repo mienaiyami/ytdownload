@@ -14,6 +14,8 @@ if (ffmpegPath)
     ffmpeg.setFfmpegPath(ffmpegPath);
 import sanitize from "sanitize-filename";
 import { Command, Option } from "commander";
+import dotenv from "dotenv";
+dotenv.config();
 const pkgJSON = JSON.parse(fs.readFileSync("./package.json", "utf8"));
 const program = new Command();
 const settingsPath = path.resolve("./settings.json");
@@ -31,6 +33,7 @@ program
     .name("yt-downloader")
     .description(`CLI to download mp3/mp4 from youtube.
 Run with or without args.
+If you are getting low download speed try adding cookies to ".env" file or using command given below.
 By ${chalk.greenBright("https://github.com/mienaiyami")}`)
     .version(pkgJSON.version)
     .addHelpText("afterAll", `
@@ -42,7 +45,8 @@ program
     .addOption(new Option("-a, --audio", "Download mp3"))
     .addOption(new Option("-v, --video", "Download mp4"))
     .addOption(new Option("-b, --bitrate <size>", "Bitrate of audio in kbps.").argParser(parseInt))
-    .addOption(new Option("-q, --quality <option>", `Video quality`).choices(qualityOrder));
+    .addOption(new Option("-q, --quality <option>", `Video quality`).choices(qualityOrder))
+    .addOption(new Option("-c, --cookies <string>", `Set cookies for a bit faster download or to access private videos. Need to change regularly. Go to ${chalk.greenBright("https://www.youtube.com/")}, ctrl+shift+i, type ${chalk.greenBright("document.cookies")}, copy and paste whole result.`));
 const defaultSettings = {
     /**
      * suffix bitrate on file name, ex. `abc._320kbps.mp3`
@@ -285,7 +289,14 @@ class YTDownload {
      * if found bitrates are higher #bitrate, choose first higher from bottom.
      */
     async #getAudio(url) {
-        const info = await ytdl.getInfo(url);
+        const info = await ytdl.getInfo(url, {
+            requestOptions: {
+                headers: {
+                    cookie: process.env.COOKIES,
+                },
+            },
+        });
+        // fs.writeFileSync("test.json", JSON.stringify(info.formats, null, "\t"));
         const audios = ytdl.filterFormats(info.formats, "audioonly");
         if (audios.length === 0)
             return console.error("No audio found.");
@@ -293,8 +304,14 @@ class YTDownload {
             .reverse()
             .find((e) => e.audioBitrate && e.audioBitrate >= this.#bitrate) || audios[0];
         const title = sanitize(info.videoDetails.title);
+        console.log(process.env.COOKIES);
         const stream = ytdl.downloadFromInfo(info, {
             format: best,
+            requestOptions: {
+                headers: {
+                    cookie: process.env.COOKIES,
+                },
+            },
         });
         console.log(chalk.greenBright("Title:"), title);
         console.log(chalk.greenBright("Started:"), new Date().toLocaleTimeString());
@@ -346,7 +363,13 @@ class YTDownload {
         });
     }
     async #getVideo(url) {
-        const info = await ytdl.getInfo(url);
+        const info = await ytdl.getInfo(url, {
+            requestOptions: {
+                headers: {
+                    cookie: process.env.COOKIES,
+                },
+            },
+        });
         const videos = ytdl.filterFormats(info.formats, (format) => format.qualityLabel &&
             format.container === "mp4" &&
             !format.hasAudio);
@@ -385,17 +408,25 @@ class YTDownload {
         }
         const videoStream = ytdl.downloadFromInfo(info, {
             format: bestVideo,
+            requestOptions: {
+                headers: {
+                    cookie: process.env.COOKIES,
+                },
+            },
         });
         const audios = ytdl.filterFormats(info.formats, "audioonly");
-        console.log(audios);
         if (audios.length === 0)
             return console.error("No audio found.");
         const bestAudio = [...audios]
             .reverse()
             .find((e) => e.audioBitrate && e.audioBitrate >= this.#bitrate) || audios[0];
-        console.log(bestAudio);
         const audioStream = ytdl.downloadFromInfo(info, {
             format: bestAudio,
+            requestOptions: {
+                headers: {
+                    cookie: process.env.COOKIES,
+                },
+            },
         });
         const title = sanitize(info.videoDetails.title);
         console.log(chalk.greenBright("Title:"), title);
@@ -501,6 +532,11 @@ class YTDownload {
 }
 const dl = new YTDownload();
 program.parse(process.argv);
+if (program.opts().cookies) {
+    fs.writeFileSync("./.env", `COOKIES="${program.opts().cookies}"`);
+    console.log(chalk.greenBright("Cookies added."));
+    process.exit(0);
+}
 await dl.start(program.opts());
 // test https://www.youtube.com/watch?v=aqz-KE-bpKQ
 // https://www.youtube.com/watch?v=2x0WL5GDrfs

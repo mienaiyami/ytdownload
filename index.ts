@@ -16,6 +16,8 @@ if (ffmpegPath) ffmpeg.setFfmpegPath(ffmpegPath);
 
 import sanitize from "sanitize-filename";
 import { Command, Option } from "commander";
+import dotenv from "dotenv";
+dotenv.config();
 
 const pkgJSON = JSON.parse(fs.readFileSync("./package.json", "utf8"));
 
@@ -37,6 +39,7 @@ program
     .description(
         `CLI to download mp3/mp4 from youtube.
 Run with or without args.
+If you are getting low download speed try adding cookies to ".env" file or using command given below.
 By ${chalk.greenBright("https://github.com/mienaiyami")}`
     )
     .version(pkgJSON.version)
@@ -68,6 +71,16 @@ program
     .addOption(
         new Option("-q, --quality <option>", `Video quality`).choices(
             qualityOrder
+        )
+    )
+    .addOption(
+        new Option(
+            "-c, --cookies <string>",
+            `Set cookies for a bit faster download or to access private videos. Need to change regularly. Go to ${chalk.greenBright(
+                "https://www.youtube.com/"
+            )}, ctrl+shift+i, type ${chalk.greenBright(
+                "document.cookies"
+            )}, copy and paste whole result.`
         )
     );
 
@@ -323,7 +336,14 @@ class YTDownload {
      * if found bitrates are higher #bitrate, choose first higher from bottom.
      */
     async #getAudio(url: string) {
-        const info = await ytdl.getInfo(url);
+        const info = await ytdl.getInfo(url, {
+            requestOptions: {
+                headers: {
+                    cookie: process.env.COOKIES,
+                },
+            },
+        });
+        // fs.writeFileSync("test.json", JSON.stringify(info.formats, null, "\t"));
         const audios = ytdl.filterFormats(info.formats, "audioonly");
         if (audios.length === 0) return console.error("No audio found.");
         const best =
@@ -333,8 +353,14 @@ class YTDownload {
                     (e) => e.audioBitrate && e.audioBitrate >= this.#bitrate
                 ) || audios[0];
         const title = sanitize(info.videoDetails.title);
+        console.log(process.env.COOKIES);
         const stream = ytdl.downloadFromInfo(info, {
             format: best,
+            requestOptions: {
+                headers: {
+                    cookie: process.env.COOKIES,
+                },
+            },
         });
         console.log(chalk.greenBright("Title:"), title);
         console.log(
@@ -399,7 +425,13 @@ class YTDownload {
             });
     }
     async #getVideo(url: string) {
-        const info = await ytdl.getInfo(url);
+        const info = await ytdl.getInfo(url, {
+            requestOptions: {
+                headers: {
+                    cookie: process.env.COOKIES,
+                },
+            },
+        });
         const videos = ytdl.filterFormats(
             info.formats,
             (format) =>
@@ -447,10 +479,14 @@ class YTDownload {
         }
         const videoStream = ytdl.downloadFromInfo(info, {
             format: bestVideo,
+            requestOptions: {
+                headers: {
+                    cookie: process.env.COOKIES,
+                },
+            },
         });
 
         const audios = ytdl.filterFormats(info.formats, "audioonly");
-        console.log(audios);
         if (audios.length === 0) return console.error("No audio found.");
         const bestAudio =
             [...audios]
@@ -458,9 +494,13 @@ class YTDownload {
                 .find(
                     (e) => e.audioBitrate && e.audioBitrate >= this.#bitrate
                 ) || audios[0];
-        console.log(bestAudio);
         const audioStream = ytdl.downloadFromInfo(info, {
             format: bestAudio,
+            requestOptions: {
+                headers: {
+                    cookie: process.env.COOKIES,
+                },
+            },
         });
 
         const title = sanitize(info.videoDetails.title);
@@ -590,6 +630,11 @@ class YTDownload {
 }
 const dl = new YTDownload();
 program.parse(process.argv);
+if (program.opts().cookies) {
+    fs.writeFileSync("./.env", `COOKIES="${program.opts().cookies}"`);
+    console.log(chalk.greenBright("Cookies added."));
+    process.exit(0);
+}
 await dl.start(program.opts());
 
 // test https://www.youtube.com/watch?v=aqz-KE-bpKQ

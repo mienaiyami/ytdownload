@@ -11,6 +11,9 @@ dependencies:
   commander:
     specifier: ^11.0.0
     version: 11.0.0
+  dotenv:
+    specifier: ^16.3.1
+    version: 16.3.1
   ffmpeg-static:
     specifier: ^5.1.0
     version: 5.1.0
@@ -235,6 +238,11 @@ packages:
     resolution: {integrity: sha512-eFuaLoy/Rxalv2kr+lqMlUnrDWV+3j4pljOIJgLIhI058IQfWJ7vXhyEIHu+HtC738klGALYxOKDO0bQP3tg8A==}
     dependencies:
       clone: 1.0.4
+    dev: false
+
+  /dotenv@16.3.1:
+    resolution: {integrity: sha512-IPzF4w4/Rd94bA9imS68tZBaYyBWSCE47V1RGuMrB94iyTOIEwRmVL2x/4An+6mETpLrKJ5hQkB8W4kFAadeIQ==}
+    engines: {node: '>=12'}
     dev: false
 
   /emoji-regex@8.0.0:
