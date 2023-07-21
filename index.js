@@ -480,6 +480,10 @@ class YTDownload {
                     this.startDownload();
                 })
                     .on("end", () => {
+                    if (fs.existsSync(tempAudio))
+                        fs.rmSync(tempAudio);
+                    if (fs.existsSync(tempVideo))
+                        fs.rmSync(tempVideo);
                     buildSpinner.success();
                     console.log(chalk.greenBright("Built:"), new Date().toLocaleTimeString());
                     this.startDownload();
