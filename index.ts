@@ -11,6 +11,9 @@ import inquirer from "inquirer";
 import { createSpinner } from "nanospinner";
 import ytdl from "ytdl-core";
 import ffmpeg from "fluent-ffmpeg";
+import ffmpegPath from "ffmpeg-static";
+if (ffmpegPath) ffmpeg.setFfmpegPath(ffmpegPath);
+
 import sanitize from "sanitize-filename";
 import { Command, Option } from "commander";
 
