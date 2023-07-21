@@ -2,4 +2,5 @@
 
 npm install;
 set PATH=%PATH%;%~dp0
-set /p confirm="Installed."
+echo "Installed."
+pause

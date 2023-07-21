@@ -12,10 +12,11 @@ Run without args to for options or start with args to start download immediately
 Run
 ```sh
 git clone <url-of-this-repo> #at any directory
-
-npm install 
-#or 
-pnpm install #for lower disk space
+```
+```sh
+npm install
+# or 
+installAndSetPath.cmd
 ```
 
 
