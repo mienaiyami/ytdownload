@@ -206,7 +206,16 @@ class YTDownload {
             type: "list",
             message: chalk.greenBright("Choose audio bitrate:"),
             prefix: chalk.cyanBright("#"),
-            choices: ["320kbps", "256kbps", "192kbps", "128kbps", "96kbps"],
+            choices: [
+                "320kbps",
+                "256kbps",
+                "192kbps",
+                "160kbps",
+                "128kbps",
+                "96kbps",
+                "64kbps",
+                "48kbps",
+            ],
             default: "128kbps",
             filter(input: string) {
                 return parseInt(input);
@@ -441,6 +450,7 @@ class YTDownload {
         });
 
         const audios = ytdl.filterFormats(info.formats, "audioonly");
+        console.log(audios);
         if (audios.length === 0) return console.error("No audio found.");
         const bestAudio =
             [...audios]
@@ -448,6 +458,7 @@ class YTDownload {
                 .find(
                     (e) => e.audioBitrate && e.audioBitrate >= this.#bitrate
                 ) || audios[0];
+        console.log(bestAudio);
         const audioStream = ytdl.downloadFromInfo(info, {
             format: bestAudio,
         });
