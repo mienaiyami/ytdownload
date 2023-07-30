@@ -365,7 +365,7 @@ class YTDownload {
                     (e) => e.audioBitrate && e.audioBitrate >= this.#bitrate
                 ) || audios[0];
         const title = sanitize(info.videoDetails.title);
-        console.log(process.env.COOKIES);
+        // console.log(process.env.COOKIES);
         const stream = ytdl.downloadFromInfo(info, {
             format: best,
             requestOptions: {
@@ -444,6 +444,7 @@ class YTDownload {
                 },
             },
         });
+        // fs.writeFileSync("test.json", JSON.stringify(info.formats, null, "\t"));
         const videos = ytdl.filterFormats(
             info.formats,
             (format) =>
