@@ -375,20 +375,33 @@ class YTDownload {
             },
         });
         console.log(chalk.greenBright("Title:"), title);
+        const started = new Date();
         console.log(
             chalk.greenBright("Started:"),
-            new Date().toLocaleTimeString()
+            started.toLocaleTimeString()
         );
+
         const spinner = createSpinner("Starting Download...").start();
         const filename = `./downloads/mp3/${title}${
             settings.suffixBitrate ? `_${this.#bitrate}kbps` : ""
         }.mp3`;
+        let prevSize = 0;
+        let prevTime = started;
         stream.on("progress", (e, downloaded, total) => {
+            const timeNow = new Date();
+            if (timeNow.getTime() - prevTime.getTime() < 200) return;
             spinner.update({
-                text: `${this.byteToMB(downloaded)} / ${this.byteToMB(
+                text: `[${this.byteToMB(downloaded)} / ${this.byteToMB(
                     total
-                )}MB`,
+                )} MB] @ ${this.byteToMB(
+                    (downloaded - prevSize) /
+                        ((timeNow.getTime() - prevTime.getTime()) / 1000)
+                )}MBps [${new Date(timeNow.getTime() - started.getTime())
+                    .toISOString()
+                    .substring(11, 19)}]`,
             });
+            prevSize = downloaded;
+            prevTime = timeNow;
         });
         stream.on("error", (err) => {
             spinner.error({ text: err.message });
@@ -518,9 +531,10 @@ class YTDownload {
 
         const title = sanitize(info.videoDetails.title);
         console.log(chalk.greenBright("Title:"), title);
+        const started = new Date();
         console.log(
             chalk.greenBright("Started:"),
-            new Date().toLocaleTimeString()
+            started.toLocaleTimeString()
         );
         const spinner = createSpinner("Starting Download...").start();
         const filename = `./downloads/mp4/${title}${
@@ -536,19 +550,49 @@ class YTDownload {
             audio: 0,
             videoTotal: 0,
             audioTotal: 0,
+            videoPrevSize: 0,
+            audioPrevSize: 0,
+            videoPreTime: started,
+            audioPreTime: started,
             // so downloadSuccess dont get called twice
             finished: 0,
         };
+        let prevTime = started;
         const update = () => {
+            const timeNow = new Date();
+            if (timeNow.getTime() - prevTime.getTime() < 200) return;
             spinner.update({
                 text:
-                    `Audio: ${this.byteToMB(progress.audio)} / ${this.byteToMB(
+                    `Audio: [${this.byteToMB(progress.audio)} / ${this.byteToMB(
                         progress.audioTotal
-                    )} MB\n` +
-                    `  Video: ${this.byteToMB(
+                    )} MB] @ ${this.byteToMB(
+                        (progress.audio - progress.audioPrevSize) /
+                            ((timeNow.getTime() - prevTime.getTime()) / 1000)
+                    )}MBps [${new Date(
+                        progress.audioPreTime.getTime() - started.getTime()
+                    )
+                        .toISOString()
+                        .substring(11, 19)}]\n` +
+                    `  Video: [${this.byteToMB(
                         progress.video
-                    )} / ${this.byteToMB(progress.videoTotal)} MB`,
+                    )} / ${this.byteToMB(
+                        progress.videoTotal
+                    )} MB] @ ${this.byteToMB(
+                        (progress.video - progress.videoPrevSize) /
+                            ((timeNow.getTime() - prevTime.getTime()) / 1000)
+                    )}MBps [${new Date(
+                        progress.videoPreTime.getTime() - started.getTime()
+                    )
+                        .toISOString()
+                        .substring(11, 19)}]`,
             });
+            progress.audioPrevSize = progress.audio;
+            progress.videoPrevSize = progress.video;
+            if (progress.audio !== progress.audioTotal)
+                progress.audioPreTime = timeNow;
+            if (progress.video !== progress.videoTotal)
+                progress.videoPreTime = timeNow;
+            prevTime = timeNow;
         };
 
         const downloadSuccess = () => {

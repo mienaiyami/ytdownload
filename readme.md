@@ -4,7 +4,7 @@ Download mp3 or mp4 from youtube using very simple cli app.
 
 ## How to use
 
-Require nodejs v16+, git.
+Require nodejs v16+ and git to work.
 Run without args for options or start with args to start download immediately.  
 Set cookies to increase download speed or access private video.
 
@@ -26,4 +26,9 @@ or add this directory to env path to run from anywhere using.
 
 ```sh
 ytdl --help
+```
+### Updating
+
+```sh
+git pull
 ```
